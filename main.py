@@ -32,6 +32,8 @@ draft_df['PlayerName'] = name_list.apply(lambda x: x[0])
 draft_df['PlayerId'] = name_list.apply(lambda x: x[1] if len(x) > 1 else None)
 # draft_df.drop("Player", inplace=True, axis=1)
 
+#%%
+draft_df.G.fillna(0, inplace=True)
 draft_df.CarAV.fillna(0, inplace=True)
 #%%
 draft_2010 = pd.read_csv(LOCAL_PATH + "2010_draft.csv", skiprows=1)
@@ -41,9 +43,8 @@ draft_2010.columns
 pick_av = draft_df.groupby(["Pick"]).mean()["CarAV"]
 rnd_av = draft_df.groupby(["Rnd"]).mean()["CarAV"]
 
-#%%Pull 4-yr Player Data
+#%%Pull a players AV stat
 # Ndamkong Suh URL https://www.pro-football-reference.com/players/S/SuhxNd99.htm
-
 def player_url(player_id):
     """Produces the URL for a player's PFF page"""
     url = "https://www.pro-football-reference.com/players/"
@@ -53,18 +54,26 @@ def player_url(player_id):
 
 def player_av(player_id, years=4):
     """Supplies the Approximate Value for a player over # of years"""
-    pdb.set_trace()
+    # pdb.set_trace()
     if player_id == None:
         return None
     url = player_url(player_id)
     soup = BeautifulSoup(requests.get(url).text, 'html.parser')
     table = soup.select_one("table").select("tbody")[0].find_all("tr")[:years]
-    av = [int(tr.find("td", {'data-stat':"av"}).text) for tr in table]
-    return av
-    
-TEST_ID = 'BradSa00'
-sam_brad_url = player_av(TEST_ID)
-sam_brad_url
+    #Pulls out the AV stat, then converts those to strs
+    av = [tr.find("td", {'data-stat':"av"}).text if tr.find("td", {'data-stat':"av"}) != None else '0' for tr in table]
+    av_int = [int(av_val) if len(av_val) > 0 else 0 for av_val in av]
+    return av_int
+TEST_ID = 'SuhxNd99'
+player_vals = player_av(TEST_ID)
+player_vals
+#%%Process 4-yr AV for all players
+# sample_df = draft_df.sample(frac=0.1, replace=False)
+# sample_df.PlayerId = sample_df.PlayerId.astype("string")
+# sample_df = sample_df[sample_df["G"] > 0]
+draft_df["AVList"] = draft_df.apply(lambda x: player_av(x["PlayerId"])
+                                    if x["G"] > 0 else [0], axis=1)
+
 #%%
 pick_av.plot()
 plt.title("Approximate value by draft pick position")
