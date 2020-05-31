@@ -53,14 +53,14 @@ def player_url(player_id):
 
 def player_av(player_id, years=4):
     """Supplies the Approximate Value for a player over # of years"""
+    pdb.set_trace()
     if player_id == None:
         return None
     url = player_url(player_id)
     soup = BeautifulSoup(requests.get(url).text, 'html.parser')
     table = soup.select_one("table").select("tbody")[0].find_all("tr")[:years]
-    
-    print(table)
-    print(len(table))
+    av = [int(tr.find("td", {'data-stat':"av"}).text) for tr in table]
+    return av
     
 TEST_ID = 'BradSa00'
 sam_brad_url = player_av(TEST_ID)
