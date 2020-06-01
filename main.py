@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
+from sklearn.preprocessing import StandardScaler
 from bs4 import BeautifulSoup
 
 pd.set_option('display.max_columns', 20)
@@ -36,6 +36,23 @@ def standard_scaler(signal):
     signal_vals = signal.values.reshape(len(signal), 1)
     return scaler.fit_transform(signal_vals)
 #%%Bin Function
+def bin_values(player_vals, end, bin_size):
+    """
+    Returns values binned into the given size along with bin tick marks.
+    Paramaters
+    Values: Dataframe with a Draft position column and a Value column
+    end: Last pick to consider
+    bin_size: How many rows to group together
+    
+    Output
+    binned_vals: Actual values binned
+    bins_n: The index values they were binned between.
+    """
+    # pdb.set_trace()
+    binned_vals = player_vals.values.reshape(-1, bin_size)
+    binned_vals = np.mean(binned_vals, axis=1)
+    bins_n = np.arange(1, end, bin_size) + (bin_size)/2 - 1
+    return binned_vals, bins_n
 
 #%%Processing Draft Data
 name_list = draft_df.Player.str.split('\\')
@@ -72,14 +89,14 @@ def player_av(player_id, years=4):
 TEST_ID = 'SuhxNd99'
 player_vals = player_av(TEST_ID)
 player_vals
-#%%Process 4-yr AV for all players
+#%%Pull 4-yr AV for all players
 #This step takes some time. Has to make ~1500 HTTP Requests
 # sample_df = draft_df.sample(frac=0.1, replace=False)
 # sample_df.PlayerId = sample_df.PlayerId.astype("string")
 # sample_df = sample_df[sample_df["G"] > 0]
 draft_df["AVList"] = draft_df.apply(lambda x: player_av(x["PlayerId"])
                                     if x["G"] > 0 else [0], axis=1)
-#%%Save Draft Dataframe to CSV
+#%%Process 4-yr AV list into summation
 # draft_df["FourYearAV"] = np.array(draft_df["AVList"].sum(skipna=False))
 draft_df["FourYearAV"] = draft_df["AVList"].apply(lambda x: np.sum(x))
 
@@ -90,25 +107,23 @@ rnd_av = draft_df.groupby(["Rnd"]).mean()["FourYearAV"]
 #end point needs to be divisible by bin-size
 ENDPOINT = 256
 BIN_SIZE = 16
-two_rounds = pick_av[pick_av.index<=ENDPOINT]
-two_rounds_bin = two_rounds.values.reshape(-1, BIN_SIZE)
-two_rounds_bin = np.mean(two_rounds_bin, axis=1)
-bins_n = np.arange(1, ENDPOINT, BIN_SIZE) + (BIN_SIZE)/2 - 1
-#%%Binning Values for Jimmy Johnson Trade Value
+draft_vals, draft_bins = bin_values(pick_av, ENDPOINT, BIN_SIZE)
+
 ENDPOINT = 224
 chart = jimmy_j[["Pick", "Value"]][:-1]
-jimmy_bin = chart.Value.values.reshape(-1, BIN_SIZE)
-jimmy_bin = np.mean(jimmy_bin, axis=1)
-bins_j = np.arange(1, ENDPOINT, BIN_SIZE) + (BIN_SIZE)/2 - 1
+chart.set_index("Pick", inplace=True) 
+jimmy_bin, bin_j = bin_values(chart, ENDPOINT, BIN_SIZE)
+jimmy_bin
+
 #%%Normalizing values for direct comparison
 
 
 
 #%%Bar Chart of Pick Value
-plt.bar(height=two_rounds_bin, x=bins_n, edgecolor='black', width=BIN_SIZE)
+plt.bar(height=draft_vals, x=draft_bins, edgecolor='black', width=BIN_SIZE)
 plt.xlabel("Pick Position")
 plt.ylabel("Mean Approximate Value")
-plt.xticks(bins_n)
+plt.xticks(draft_bins)
 plt.title("Approximate Value by Draft Position")
 plt.show()
 #%%Jimmy J Trade Value Chart
