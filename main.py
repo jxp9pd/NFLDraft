@@ -16,6 +16,8 @@ LOCAL_PATH = "C:/Users/jopentak/Documents/Data/draft_data/"
 #%%Reading in AV drafts and Trade Value Chart
 jimmy_j = pd.read_csv(LOCAL_PATH + "jimmy_j_chart.csv")
 draft_df = pd.read_csv(LOCAL_PATH + "draftAV2000_2015.csv")
+#Something went wrong with 2012 pick values
+draft_df.loc[draft_df.Year == 2012, "Pick"] = draft_df.loc[draft_df.Year == 2012].index - 3059
 #%%Scaler Function
 def standard_scaler(signal):
     """Converts everything into z-scores (sklearn standard scaler)"""
@@ -109,21 +111,21 @@ plt.show()
 
 plt.bar(height=jimmy_bin, x=bins_j, edgecolor="black", width=BIN_SIZE)
 plt.xticks(bins_j)
-plt.title("Jimmy Johnson Trade Value Bar Chart")
+plt.title("Jimmy Johnson Trade Value")
 plt.xlabel("Pick Position")
 plt.ylabel("Trade Value")
 plt.show()
 #%%Standard Scaled Charts
 plt.bar(height=jimmy_scaled, x=bins_j, edgecolor="black", width=BIN_SIZE)
 plt.xticks(bins_j)
-plt.title("Jimmy Johnson Trade Value Bar Chart")
+plt.title("Jimmy Johnson Trade Value")
 plt.xlabel("Pick Position")
 plt.ylabel("Trade Value")
 plt.show()
 
 plt.bar(height=draft_scaled, x=draft_bins, edgecolor="black", width=BIN_SIZE)
 plt.xticks(draft_bins)
-plt.title("Jimmy Johnson Trade Value Bar Chart")
+plt.title("Jimmy Johnson Trade Value")
 plt.xlabel("Pick Position")
 plt.ylabel("Trade Value")
 plt.show()
