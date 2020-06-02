@@ -1,6 +1,7 @@
 """Use the expected baseline model to analyze different drafts"""
 
 import pickle
+import pdb
 
 import numpy as np
 import pandas as pd
@@ -34,6 +35,31 @@ def get_baselines(picks, model):
     poly = PolynomialFeatures(degree=3)
     X_poly = poly.fit_transform(picks.reshape(-1, 1))
     return model.predict(X_poly)
+
+#%%GM Evaluator
+
+def gm_evaluate(team, start_year, end_year, name, include_2016=True):
+    """Prints out a summary of a GM's draft performance"""
+    gm_df = draft_df[(draft_df.Tm == team) & (draft_df.Year>=start_year) &
+                     (draft_df.Year<=end_year)]
+    if include_2016:
+        gm_df = pd.concat([gm_df, draft_2016[draft_2016.Tm == team]])
+
+    sorted_picks = gm_df.sort_values(by="PickDelta", ascending=False)[
+        ["Pos", "PlayerName", "Pick", "FourYearAV", "ExpectedValue", "PickDelta"]]
+    # pdb.set_trace()
+    added_value = gm_df.PickDelta.sum()
+    
+    print(name + "'s Five Best Picks:")
+    print(sorted_picks.head(5))
+    print()
+    print(name + "'s Five Worst Picks:")
+    print(sorted_picks.tail(5))
+    
+    print(name + " overall drafted {:.2f} in marginal value.".format(added_value))
+    print("He added on average {:.2f} per draft.".format(added_value/gm_df.Year.nunique()))
+    return gm_df
+    
 #%%Find Biggest "winners" and "losers"
 
 predicted = get_baselines(np.arange(1, 225), poly_model)
@@ -52,36 +78,26 @@ best_finds.head(10)
 #%%Plot Baseline Career Value vs. Actual
 
 plt.plot(predicted, label="Expected Value")
-plt.plot(seven_rounds.FourYearAV, label="Actual Draft Value")
+plt.plot(draft_2016.FourYearAV, label="Actual Draft Value")
 plt.legend()
 plt.title("Comparing Actual Draft Value with Expected Baseline")
 plt.show()
 #%%Grigson Review
+grigson_df = gm_evaluate("IND", 2012, 2016, "Grigson", True)
+thompson_df = gm_evaluate("GNB", 2005, 2016, "Ted Thompson", True)
+bruce_df = gm_evaluate("WAS", 2009, 2016, "Bruce Allen", True)
+roseman_df = gm_evaluate("PHI", 2010, 2014, "Howie Roseman", True)
 
-grigson_df = draft_df[(draft_df.Tm == "IND") & (draft_df.Year>=2012)]
-# grigson_df["ExpectedValue"] = get_baselines(grigson_df.Pick.values, poly_model)
-# grigson_df["PickDelta"] = grigson_df["FourYearAV"] - grigson_df["ExpectedValue"]
-grigson_df = pd.concat([grigson_df, draft_2016[draft_2016.Tm == "IND"]])
-sorted_picks = grigson_df.sort_values(by="PickDelta", ascending=False)[
-    ["Pos", "PlayerName", "Pick", "FourYearAV", "ExpectedValue", "PickDelta"]]
-added_value = grigson_df.PickDelta.sum()
+#%%Team Evals
 
-print("Grigson's Five Best Picks:")
-print(sorted_picks.head(5))
-print("Grigson's Five Worst Picks:")
-print(sorted_picks.tail(5))
-print("Grigson overall delivered {:.2f} in additional value, averaging {:.2f} added value per draft".format(added_value, added_value/5))
-#%%Ozzie ozzie Review
+cleveland_df = gm_evaluate("CLE", 2000, 2016, "Cleveland Browns", True)
+buffalo_df = gm_evaluate("BUF", 2000, 2016, "Buffalo Bills", True)
+kc_df = gm_evaluate("KAN", 2000, 2016, "Kansas City Chiefs", True)
+ind_df = gm_evaluate("IND", 2000, 2016, "Colts", True)
+pit_df = gm_evaluate("DET", 2000, 2016, "Pittsburgh Steelers", True)
+#%%Team Groupbys
 
-ozzie_df = draft_df[draft_df.Tm == "BAL"]
-ozzie_df = pd.concat([ozzie_df, draft_2016[draft_2016.Tm == "BAL"]])
-sorted_picks = ozzie_df.sort_values(by="PickDelta", ascending=False)[
-    ["Pos", "PlayerName", "Pick", "FourYearAV", "ExpectedValue", "PickDelta"]]
-added_value = ozzie_df.PickDelta.sum()
+draft_df.groupby("Pos")["PickDelta"].mean().sort_values(ascending=False)
 
-print("Ozzie Newsome's Five Best Picks:")
-print(sorted_picks.head(5))
-print("Ozzie Newsome's Five Worst Picks:")
-print(sorted_picks.tail(5))
-print("Ozzie Newsome drafted {:.2f} in additional value, averaging {:.2f} per draft"
-      .format(added_value, added_value/ozzie_df.Year.nunique()))
+
+
