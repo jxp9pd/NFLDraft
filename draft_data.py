@@ -17,6 +17,7 @@ pd.set_option('display.max_rows', 100)
 
 LOCAL_PATH = "C:/Users/jopentak/Documents/Data/draft_data/"
 #%%Reading in Draft Data
+
 START_YEAR = 2000
 draft_years = [str(year) + "_draft.csv" for year in np.arange(START_YEAR, 2017)]
 draft_data = [pd.read_csv(LOCAL_PATH + filename, skiprows=1)
@@ -27,6 +28,7 @@ for df in draft_data:
 START_YEAR -= len(draft_data)
 draft_df = pd.concat(draft_data)
 #%%Processing Draft Data
+
 name_list = draft_df.Player.str.split('\\')
 draft_df['PlayerName'] = name_list.apply(lambda x: x[0])
 draft_df['PlayerId'] = name_list.apply(lambda x: x[1] if len(x) > 1 else None)
@@ -66,10 +68,13 @@ TEST_ID = 'SuhxNd99'
 player_vals = player_av(TEST_ID)
 player_vals
 #%%Pull 4-yr AV for all players
+
 #This step takes some time. Has to make ~1500 HTTP Requests
 draft_df["AVList"] = draft_df.apply(lambda x: player_av(x["PlayerId"])
                                     if x["G"] > 0 else [0], axis=1)
+
 #%%Process 4-yr AV list into summation
+
 # draft_df["FourYearAV"] = np.array(draft_df["AVList"].sum(skipna=False))
 draft_df["FourYearAV"] = draft_df["AVList"].apply(lambda x: np.sum(x))
 draft_2016 = draft_df[draft_df.Year == 2016]
